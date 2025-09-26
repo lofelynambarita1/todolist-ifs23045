@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Todo List</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <style>
+    /* Background animasi (default terang) */
+    .background-default {
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      animation: gradientMove 10s ease infinite;
+      background-size: 400% 400%;
+    }
+    @keyframes gradientMove {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    /* Background soft */
+    .background-soft {
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    }
+
+    /* Background gelap */
+    .background-dark {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    }
+
+    /* Todo item */
+    .todo-item {
+      transition: all 0.3s ease;
+      border-left: 6px solid transparent;
+    }
+    .todo-item:hover {
+      transform: scale(1.02);
+      border-left: 6px solid #3b82f6;
+    }
+
+    /* Badge deadline */
+    .deadline {
+      font-size: 0.75rem;
+      margin-left: 8px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .deadline-ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .deadline-late {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* Badge priority */
+    .priority-badge {
+      font-size: 0.75rem;
+      margin-left: 8px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .priority-low {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .priority-medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .priority-high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* Compact mode */
+    .compact .todo-item {
+      padding: 4px 8px !important;
+      font-size: 0.85rem;
+    }
+    .compact #controls {
+      flex-direction: column !important;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center transition background-default">
+
+  <div class="w-full max-w-2xl bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 transition relative">
+    
+    <!-- Toolbar -->
+    <div class="absolute top-4 right-4 flex gap-2">
+      <button id="compactToggle" class="px-3 py-1 text-sm rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 transition">📏</button>
+      <button id="themeToggle" class="px-3 py-1 text-sm rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 transition">🌙</button>
+      <button id="bgToggle" class="px-3 py-1 text-sm rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 transition">🎨</button>
+      <button id="clearAllBtn" class="px-3 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600 transition">🧹</button>
+    </div>
+
+    <h2 class="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-gray-200">📋 Todo List</h2>
+
+    <!-- Progress bar -->
+    <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+      <div id="progressFill" class="bg-blue-500 h-4 rounded-full text-xs text-white text-center" style="width:0%">
+        <span id="progressText">0% Selesai</span>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="controls" class="flex flex-col sm:flex-row gap-3 mb-5">
+      <input type="text" id="todoInput" placeholder="Tambah todo baru..."
+        class="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white">
+      <input type="date" id="deadlineInput"
+        class="p-2 border rounded dark:bg-gray-700 dark:text-white">
+      <select id="priorityInput" class="p-2 border rounded dark:bg-gray-700 dark:text-white">
+        <option value="">-- Pilih Prioritas --</option>
+        <option value="low">Low 🔵</option>
+        <option value="medium">Medium 🟠</option>
+        <option value="high">High 🔴</option>
+      </select>
+      <button onclick="addTodo()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tambah</button>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3 mb-5">
+      <select id="filter" onchange="renderTodos()" 
+        class="p-2 border rounded w-full sm:w-1/3 focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white">
+        <option value="all">Semua</option>
+        <option value="done">Selesai</option>
+        <option value="not-done">Belum Selesai</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="Cari todo..." onkeyup="renderTodos()"
+        class="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white">
+    </div>
+
+    <!-- List -->
+    <ul id="todoList" class="space-y-2"></ul>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 space-y-2 z-50"></div>
+
+  <!-- Modal Konfirmasi -->
+  <div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-80 text-center">
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Hapus Semua Todo?</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Tindakan ini tidak bisa dibatalkan.</p>
+      <div class="flex justify-center gap-3">
+        <button id="cancelClear" class="px-4 py-2 rounded bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600">Batal</button>
+        <button id="confirmClear" class="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let todos = [];
+
+    // Aktifkan drag & drop
+    new Sortable(todoList, { animation: 150 });
+
+    const priorityOrder = { high: 1, medium: 2, low: 3 };
+
+    // LocalStorage
+    function saveTodos() { localStorage.setItem("todos", JSON.stringify(todos)); }
+    function loadTodos() {
+      const saved = localStorage.getItem("todos");
+      if (saved) todos = JSON.parse(saved);
+    }
+
+    // Progress
+    function updateProgress() {
+      const todosEls = document.querySelectorAll("#todoList li");
+      const done = document.querySelectorAll("#todoList li.done");
+      const progress = Math.round((done.length / todosEls.length) * 100) || 0;
+      document.getElementById("progressFill").style.width = progress + "%";
+      document.getElementById("progressText").innerText = progress + "% Selesai";
+    }
+
+    // Toast
+    function showToast(msg, type="success") {
+      const toast = document.createElement("div");
+      toast.className = `px-4 py-2 rounded shadow text-white ${type==="success" ? "bg-green-500" : "bg-red-500"}`;
+      toast.innerText = msg;
+      document.getElementById("toastContainer").appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Tambah todo
+    function addTodo() {
+      const input = document.getElementById("todoInput");
+      const deadlineInput = document.getElementById("deadlineInput");
+      const text = input.value.trim();
+      const deadline = deadlineInput.value;
+      const priority = document.getElementById("priorityInput").value;
+
+      if (!text) return showToast("Todo tidak boleh kosong!", "error");
+      if (!deadline) return showToast("Harus mengisi deadline!", "error");
+      if (!priority) return showToast("Harus memilih prioritas!", "error");
+
+      const todo = { text, done:false, priority, deadline };
+      todos.push(todo);
+      saveTodos();
+      input.value = "";
+      deadlineInput.value = "";
+      document.getElementById("priorityInput").value = "";
+      renderTodos();
+      updateProgress();
+      showToast("Todo berhasil ditambahkan ✅");
+    }
+
+    // Render
+    function renderTodos() {
+      const list = document.getElementById("todoList");
+      list.innerHTML = "";
+      const filter = document.getElementById("filter").value;
+      const search = document.getElementById("searchInput").value.toLowerCase();
+
+      let filtered = todos.filter(t => {
+        if (filter==="done" && !t.done) return false;
+        if (filter==="not-done" && t.done) return false;
+        if (search && !t.text.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      let sorted = [...filtered].sort((a,b)=>priorityOrder[a.priority]-priorityOrder[b.priority]);
+
+      sorted.forEach(todo=>{
+        const li = document.createElement("li");
+        li.className = `flex justify-between items-center p-3 rounded shadow todo-item ${todo.done?"bg-green-100 done":"bg-gray-100"}`;
+
+        const today = new Date();
+        const deadlineDate = new Date(todo.deadline+"T23:59:59");
+        const deadlineBadge = deadlineDate<today 
+          ? `<span class="deadline deadline-late">⏰ Terlambat (${todo.deadline})</span>` 
+          : `<span class="deadline deadline-ok">📅 Batas: ${todo.deadline}</span>`;
+
+        let priorityBadge = "";
+        if (todo.priority==="low") priorityBadge=`<span class="priority-badge priority-low">🔵 Low</span>`;
+        if (todo.priority==="medium") priorityBadge=`<span class="priority-badge priority-medium">🟠 Medium</span>`;
+        if (todo.priority==="high") priorityBadge=`<span class="priority-badge priority-high">🔴 High</span>`;
+
+        li.innerHTML = `
+          <span class="${todo.done?"line-through text-gray-500":""}">
+            ${todo.text} ${priorityBadge} ${deadlineBadge}
+          </span>
+          <div class="flex gap-2">
+            <button onclick="editTodo(${todos.indexOf(todo)})" class="px-2 py-1 bg-yellow-400 rounded">✏️</button>
+            <button onclick="deleteTodo(${todos.indexOf(todo)})" class="px-2 py-1 bg-red-500 text-white rounded">🗑️</button>
+          </div>
+        `;
+        li.onclick = e=>{
+          if(e.target.tagName!=="BUTTON"){
+            todo.done=!todo.done;
+            saveTodos(); renderTodos(); updateProgress();
+          }
+        };
+        list.appendChild(li);
+      });
+      updateProgress();
+    }
+
+    function deleteTodo(i){ todos.splice(i,1); saveTodos(); renderTodos(); updateProgress(); showToast("Todo dihapus ❌","error"); }
+    function editTodo(i){ const newText=prompt("Edit todo:",todos[i].text); if(newText){todos[i].text=newText.trim(); saveTodos(); renderTodos(); showToast("Todo diupdate ✏️");} }
+
+    /* ====== FITUR TAMBAHAN ====== */
+    // Background toggle
+    document.getElementById("bgToggle").addEventListener("click",()=>{
+      const body=document.body;
+      if(body.classList.contains("background-default")){
+        body.classList.remove("background-default"); body.classList.add("background-soft");
+        showToast("Background soft 🌸");
+      } else if(body.classList.contains("background-soft")){
+        body.classList.remove("background-soft"); body.classList.add("background-default");
+        showToast("Background animasi ✨");
+      }
+    });
+
+    // Compact mode
+    document.getElementById("compactToggle").addEventListener("click",()=>{
+      document.body.classList.toggle("compact");
+      showToast("Compact mode "+(document.body.classList.contains("compact")?"aktif 📏":"dimatikan ❌"));
+    });
+
+    // Dark/Light mode
+    document.getElementById("themeToggle").addEventListener("click",()=>{
+      const body=document.body;
+      if(body.classList.contains("dark")){
+        body.classList.remove("dark","background-dark"); body.classList.add("background-default");
+        showToast("Mode Terang ☀️");
+      } else {
+        body.classList.add("dark","background-dark"); body.classList.remove("background-default","background-soft");
+        showToast("Mode Gelap 🌙");
+      }
+    });
+
+    // Hapus semua todo
+    const clearAllBtn=document.getElementById("clearAllBtn");
+    const confirmModal=document.getElementById("confirmModal");
+    document.getElementById("cancelClear").addEventListener("click",()=>confirmModal.classList.add("hidden"));
+    document.getElementById("confirmClear").addEventListener("click",()=>{
+      todos=[]; saveTodos(); renderTodos(); updateProgress(); confirmModal.classList.add("hidden");
+      showToast("Semua todo dihapus 🧹","error");
+    });
+    clearAllBtn.addEventListener("click",()=>confirmModal.classList.remove("hidden"));
+
+    window.onload=()=>{ loadTodos(); renderTodos(); updateProgress(); };
+  </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+/* Animasi Toast */
+#toastContainer div {
+  animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Transisi halus */
+body, .transition {
+  transition: background-color 0.3s, color 0.3s, background-image 0.5s ease-in-out;
+}
+
+/* Background Modes */
+.background-default {
+  background: #f3f4f6;
+}
+.background-sunset {
+  background: linear-gradient(to right, #ff7e5f, #feb47b);
+}
+.background-galaxy {
+  background: radial-gradient(circle at top, #1e3c72, #2a5298, #000);
+}
+.background-gradientfun {
+  background: linear-gradient(135deg, #667eea, #764ba2, #ff6a00, #ee0979);
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
